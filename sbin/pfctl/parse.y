@@ -246,6 +246,9 @@ static struct filter_opts {
 	char			*tag;
 	char			*match_tag;
 	u_int8_t		 match_tag_not;
+    u_int32_t       pfpipe;
+    u_int32_t       ppfpipe;
+    u_int32_t       free_flags;
 	u_int			 rtableid;
 	u_int8_t		 prio;
 	u_int8_t		 set_prio[2];
@@ -464,6 +467,7 @@ int	parseport(char *, struct range *r, int);
 %token	BITMASK RANDOM SOURCEHASH ROUNDROBIN STATICPORT PROBABILITY
 %token	ALTQ CBQ CODEL PRIQ HFSC FAIRQ BANDWIDTH TBRSIZE LINKSHARE REALTIME
 %token	UPPERLIMIT QUEUE PRIORITY QLIMIT HOGS BUCKETS RTABLE TARGET INTERVAL
+%token  PFPIPE PFQUEUE
 %token	LOAD RULESET_OPTIMIZATION PRIO
 %token	STICKYADDRESS MAXSRCSTATES MAXSRCNODES SOURCETRACK GLOBAL RULE
 %token	MAXSRCCONN MAXSRCCONNRATE OVERLOAD FLUSH SLOPPY
@@ -836,7 +840,7 @@ anchorrule	: ANCHOR anchorname dir quick interface af proto fromto
 				pf_anchor_setup(&r,
 				    &pf->astack[pf->asd]->ruleset,
 				    $2 ? $2 : pf->alast->name);
-		
+
 				if (r.anchor == NULL)
 					err(1, "anchorrule: unable to "
 					    "create ruleset");
@@ -2438,6 +2442,19 @@ pfrule		: action dir logquick interface route af proto fromto
 				}
 			}
 #endif
+            if ($9.pfpipe) {
+
+            r.pfpipe = $9.pfpipe;
+
+            if( $9.free_flags & PFRULE_IS_PIPE) {
+
+                r.free_flags |=PFRULE_IS_PIPE;
+                }
+            else
+               { r.free_flags |= PFRULE_IS_QUEUE;
+                }
+            r.pfpipe = $9.ppfpipe
+            }
 
 			expand_rule(&r, $4, $5.host, $7, $8.src_os,
 			    $8.src.host, $8.src.port, $8.dst.host, $8.dst.port,
@@ -2540,6 +2557,41 @@ filter_opt	: USER uids {
 			}
 			filter_opts.queues = $1;
 		}
+
+        | PFPIPE number        {
+            filter_opts.pfpipe =  $2;
+            filter_opts.free_flags |= PFRULE_IS_PIPE;
+            }
+
+        | PFPIPE '('number')'       {
+            filter_opts.pfpipe =  $3;
+            filter_opts.free_flags |= PFRULE_IS_PIPE;
+            }
+
+        | PFPIPE  '('number comma number ')'  {
+
+            filter_opts.ppfpipe =  $5;
+            filter_opts.pfpipe =  $3;
+            filter_opts.free_flags |= PFRULE_IS_PIPE;
+            }
+
+        | PFQUEUE number        {
+            filter_opts.pfpipe =  $2;
+            filter_opts.free_flags |= PFRULE_IS_QUEUE;
+            }
+
+        | PFQUEUE'('number')'       {
+            filter_opts.pfpipe =  $3;
+            filter_opts.free_flags |= PFRULE_IS_QUEUE;
+            }
+
+        | PFQUEUE'('number comma number ')'  {
+
+            filter_opts.ppfpipe =  $5;
+            filter_opts.pfpipe =  $3;
+            filter_opts.free_flags |= PFRULE_IS_QUEUE;
+            }
+
 		| TAG string				{
 			filter_opts.tag = $2;
 		}
@@ -4735,6 +4787,12 @@ rdr_consistent(struct pf_rule *r)
 		yyerror("invalid port operator for rdr destination port");
 		problems++;
 	}
+    /* if (r->pfpipe && r->ppfpipe && !r->direction) { */
+
+        /* yyerror("dummynet cannot be specified without direction"); */
+        /* problems++; */
+        /* } */
+
 	return (-problems);
 }
 
@@ -5509,6 +5567,8 @@ lookup(char *s)
 		{ "codelq",		CODEL},
 		{ "crop",		FRAGCROP},
 		{ "debug",		DEBUG},
+        { "pfpipe",     PFPIPE},
+        { "pfqueue",    PFQUEUE},
 		{ "divert-reply",	DIVERTREPLY},
 		{ "divert-to",		DIVERTTO},
 		{ "drop",		DROP},
