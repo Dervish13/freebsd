@@ -2453,7 +2453,7 @@ pfrule		: action dir logquick interface route af proto fromto
             else
                { r.free_flags |= PFRULE_IS_QUEUE;
                 }
-            r.pfpipe = $9.ppfpipe
+            r.pfpipe = $9.ppfpipe;
             }
 
 			expand_rule(&r, $4, $5.host, $7, $8.src_os,

@@ -1020,7 +1020,7 @@ print_rule(struct pf_rule *r, const char *anchor_call, int verbose, int numeric)
 		printf(" label \"%s\"", r->label);
   	if (r->pfpipe && r->ppfpipe)
 	       printf("You wanted pipe");
-	else if (r->dnpipe)
+	else if (r->pfpipe)
 		printf("You wanted pipe");
 
 	if (r->qname[0] && r->pqname[0])
