@@ -1018,6 +1018,11 @@ print_rule(struct pf_rule *r, const char *anchor_call, int verbose, int numeric)
 	}
 	if (r->label[0])
 		printf(" label \"%s\"", r->label);
+  	if (r->pfpipe && r->ppfpipe)
+	       printf("You wanted pipe");
+	else if (r->pfpipe)
+		printf("You wanted pipe");
+
 	if (r->qname[0] && r->pqname[0])
 		printf(" queue(%s, %s)", r->qname, r->pqname);
 	else if (r->qname[0])
@@ -1202,7 +1207,7 @@ ifa_add_groups_to_map(char *ifa_name)
 			ENTRY	 		 item;
 			ENTRY			*ret_item;
 			int			*answer;
-	
+
 			item.key = ifg->ifgrq_group;
 			if (hsearch_r(item, FIND, &ret_item, &isgroup_map) == 0) {
 				struct ifgroupreq	 ifgr2;
@@ -1358,7 +1363,7 @@ is_a_group(char *name)
 {
 	ENTRY	 		 item;
 	ENTRY			*ret_item;
-	
+
 	item.key = name;
 	if (hsearch_r(item, FIND, &ret_item, &isgroup_map) == 0)
 		return (0);
